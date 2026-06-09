@@ -1,0 +1,40 @@
+# STM32CubeIDE build directories
+Debug/
+Release/
+
+# Object files, libraries, and executables
+*.o
+*.a
+*.lib
+*.elf
+*.hex
+*.bin
+*.lst
+*.map
+
+# STM32CubeIDE project and workspace files
+.settings/
+.cproject
+.project
+*.launch
+*.prefs
+
+# STM32CubeMX generated files (if used)
+*.ioc
+*.mxproject
+
+# Temporary and log files
+*.log
+*.tmp
+*.bak
+*~
+
+# macOS metadata (if collaborating with Mac users)
+.DS_Store
+
+# Windows thumbnail cache
+Thumbs.db
+
+# Environment files (if using scripts)
+venv/
+.env
