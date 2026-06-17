@@ -18,6 +18,8 @@
 #define GYR_G_VALUE 131.0f
 #define PI 3.14159f
 
+extern I2C_HandleTypeDef hi2c1;
+
 static float filtered_angle = 0.0f;
 void I2C_Read_Registers(uint16_t memAddress, uint8_t *rxBuffer);
 
@@ -70,12 +72,6 @@ float getCurrentTilt() {
 	//Divide the acc values by GYR_G_VALUE to get forces in Gs at the default $\pm 250^\circ/\text{s}$ setting
 	float gyro_y_rate = raw_gyr_y / GYR_G_VALUE;
 
-	/*
-	 Complementary Filter -> theta_{t} = alpha * (theta_{t-1} + omega * Delta t) + (1 - alpha) * theta_{acc}
-	 [Read 6 Bytes Accel] ──► Scale by 16384.0 ──► atan2f() ──► Accel Angle (Degrees) ──┐
-	 ├──► [0.98 / 0.02 Filter Blend] ──► Updated Filtered Angle
-	 [Read 6 Bytes Gyro]  ──► Scale by 131.0   ───────────────► Gyro Rate (Deg/Sec)   ──┘
-	 */
 
 	filtered_angle = 0.98f * (filtered_angle + (gyro_y_rate * 0.004f))
 			+ 0.02f * acc_angle;
