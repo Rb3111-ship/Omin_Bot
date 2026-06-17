@@ -39,6 +39,19 @@ typedef enum {
     STATE_FAILSAFE_STAGE3_ISOLATE  // 500ms+ Drive STBY pin LOW
 } RobotState_t;
 
+
+
+typedef enum {
+    MSG_TYPE_NAV,
+    MSG_TYPE_PID_TUNING
+} MsgType_t;
+
+typedef struct {
+    float kp;
+    float ki;
+    float kd;
+} PidTune_t;
+
 /* ==========================================
    3. STRUCTS FOR INTER-TASK DATA FLOW
    ========================================== */
@@ -48,12 +61,22 @@ typedef struct {
     float target_yaw_rate;  // Turning rate (rad/s)
 } NavCommand_t;
 
+typedef struct {
+    MsgType_t type;
+    union {
+        NavCommand_t nav;     // Existing navigation commands
+        PidTune_t    tune;    // New PID tuning gains
+    } payload;
+} ControlCommand_t;
+
 // Raw metrics packaged by Safety for transmission to Pi
 typedef struct {
     uint8_t error_mask;     // The system_errors byte
     uint16_t left_us_dist;  // cm
     uint16_t right_us_dist; // cm
 } TelemetryData_t;
+
+
 
 /* ==========================================
    4. GLOBAL OS RESOURCE HANDLES (Extern declaration)

@@ -9,4 +9,5 @@
 #define PID_CONTROLLER_H
 
 void pid(uint8_t dir_angle, uint16_t steering_Offset);
+void setConst(float kp , float ki , float kd);
 #endif

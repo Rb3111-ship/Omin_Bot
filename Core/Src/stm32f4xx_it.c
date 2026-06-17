@@ -217,22 +217,36 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		if (interrupt_status & 0x03) {
 			// Read message automatically clears the controller's specific RX buffer flag
 			if (MCP_readMessage(&rx_frame) == ERROR_OK) {
-				// --- INTERRUPT PARSING ENGINE ---
 
-				// Case A: Navigation Command Frame received from Pi
 				if (rx_frame.can_id == 0x200) {
-					NavCommand_t nav_cmd;
+					ControlCommand_t cmd;
+					cmd.type = MSG_TYPE_NAV;
+					memcpy(&cmd.payload.nav.target_velocity, &rx_frame.data[0],
+							4);
+					memcpy(&cmd.payload.nav.target_yaw_rate, &rx_frame.data[4],
+							4);
 
-					// Decode bytes back to float values using type-safe memory copying
-					memcpy(&nav_cmd.target_velocity, &rx_frame.data[0], 4);
-					memcpy(&nav_cmd.target_yaw_rate, &rx_frame.data[4], 4);
+					xQueueSendToBackFromISR(NavigationQueue, &cmd,
+							&xHigherPriorityTaskWoken);
+				} else if (rx_frame.can_id == 0x210) // PID Gain Update (Kp and Ki)
+						{
+					static ControlCommand_t tuning_cmd; // Persist gains across frames
+					tuning_cmd.type = MSG_TYPE_PID_TUNING;
+					memcpy(&tuning_cmd.payload.tune.kp, &rx_frame.data[0], 4);
+					memcpy(&tuning_cmd.payload.tune.ki, &rx_frame.data[4], 4);
 
-					// Push to FreeRTOS Queue, unblocking ControlTask instantly if it's waiting
-					xQueueSendToBackFromISR(NavigationQueue, &nav_cmd,
+					// Wait for Kd in 0x211 before pushing to queue
+				} else if (rx_frame.can_id == 0x211) // PID Gain Update (Kd)
+						{
+					ControlCommand_t tuning_cmd;
+					tuning_cmd.type = MSG_TYPE_PID_TUNING;
+					// (In production, grab Kp/Ki cached variables here)
+					memcpy(&tuning_cmd.payload.tune.kd, &rx_frame.data[0], 4);
+
+					xQueueSendToBackFromISR(NavigationQueue, &tuning_cmd,
 							&xHigherPriorityTaskWoken);
 				}
-
-				// Case B: 20ms Heartbeat Keep-Alive Frame from Pi
+				// 20ms Heartbeat Keep-Alive Frame from Pi
 				else if (rx_frame.can_id == 0x700) {
 					// Confirm our explicit 1-byte payload rule (0xAA)
 					if (rx_frame.data[0] == 0xAA) {
